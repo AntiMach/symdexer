@@ -49,9 +49,7 @@ def main():
     subp = parser.add_subparsers(required=True, dest="command")
 
     find = subp.add_parser("find", help="Searches the cache for symbols matching a list of patterns")
-
     find.add_argument("patterns", metavar="PATTERN", nargs="+", help="The patterns to look for")
-
     find.add_argument("-o", "--order", metavar="SYM_TYPE", choices=list(SYM_TYPES), nargs="+")
 
     subp.add_parser("reset-cache", help="Determines if the cache should be reset or not")
