@@ -25,9 +25,6 @@ def make_cache(file: Path, paths: list[Path]):
         )
 
         for path in paths:
-            if not path.is_dir():
-                raise ValueError(f"package {path} is not a directory")
-
             for module in walk_modules(path):
                 cache_module(db, module)
 
