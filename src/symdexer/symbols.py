@@ -1,5 +1,6 @@
 import ast
-from pathlib import Path
+
+from symdexer.modules import Module
 
 
 __all__ = "SYM_TYPES", "iter_symbols"
@@ -26,9 +27,9 @@ def assign_map(node: ast.AST):
 SYM_TYPES = {"imports": import_map, "defines": define_map, "assigns": assign_map}
 
 
-def iter_symbols(module: Path):
+def iter_symbols(module: Module):
     try:
-        root = ast.parse(module.read_text("utf-8"))
+        root = ast.parse(module.path.read_text("utf-8"))
     except SyntaxError:
         return
 
