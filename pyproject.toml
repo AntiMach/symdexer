@@ -1,6 +1,10 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "symdexer"
-version = "0.0.5"
+version = "0.1.0"
 authors = [
   { name="AntiMach", email="themachinumps@gmail.com" },
 ]
@@ -12,6 +16,10 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+
+
+[project.scripts]
+symdexer = "symdexer.__main__:main"
 
 [project.urls]
 "Homepage" = "https://github.com/antimach/symdexer"

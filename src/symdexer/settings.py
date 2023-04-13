@@ -20,20 +20,15 @@ def load_settings(file: str):
     path = Path(file)
 
     if not path.is_file():
-        with path.open("w", encoding="utf-8") as fp:
-            fp.write('cache = "symdex.db"\n')
-            fp.write('order = ["defines", "assigns", "imports"]\n')
-            fp.write("\n")
-            fp.write("[packages]\n")
-            fp.write('package_name = "path/to/package"\n')
+        raise FileNotFoundError(f"settings file `{file}` does not exist")
 
     with path.open("rb") as fp:
         data = tomllib.load(fp)
 
-        if any(sym_type not in SYM_TYPES for sym_type in data["order"]):
+        if any(sym_type not in SYM_TYPES for sym_type in data["default_order"]):
             raise ValueError(f"invalid symbol type in order, values must be {list(SYM_TYPES)}")
 
-        return Settings(Path(data["cache"]), data["order"], list(load_packages(data["packages"])))
+        return Settings(Path(data["cache"]), data["default_order"], list(load_packages(data["packages"])))
 
 
 def load_packages(packages: dict[str, str]):
@@ -42,7 +37,7 @@ def load_packages(packages: dict[str, str]):
             p = Path(path)
 
             if not p.is_dir():
-                raise ImportError(f"package {name} must be a folder")
+                raise ImportError(f"package `{name}` must be a folder")
 
             yield p
             continue
@@ -50,6 +45,6 @@ def load_packages(packages: dict[str, str]):
         p = Path(importlib.import_module(name).__file__)
 
         if not p.is_file() or p.name.lower() != "__init__.py":
-            raise ImportError(f"module {name} is not a package")
+            raise ImportError(f"module `{name}` is not a package")
 
         yield p.parent

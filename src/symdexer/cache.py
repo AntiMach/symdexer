@@ -39,11 +39,20 @@ def cache_module(db: sqlite3.Connection, module: Module):
         )
 
 
-def search_cache(file: Path, symbol: str, order: list[str]) -> Generator[tuple[str, str], None, None]:
+def search_cache(file: Path, symbols: list[str], order: list[str]) -> Generator[tuple[str, str], None, None]:
     with sqlite3.connect(file) as db:
-        for sym_type in order:
-            cursor = db.execute(
-                "SELECT name, module FROM Symbol WHERE name LIKE ? AND type = ?",
-                (symbol, sym_type),
-            )
-            yield from cursor.fetchall()
+        orders = " OR ".join("type = ?" for _ in order)
+        patterns = " OR ".join("name LIKE ?" for _ in symbols)
+        cursor = db.execute(
+            f"""
+            SELECT GROUP_CONCAT(name, ", ") as names, module
+            FROM Symbol
+            WHERE ({patterns}) AND ({orders})
+            GROUP BY
+                module
+            ORDER BY
+                LENGTH(module) + LENGTH(names) ASC
+            """,
+            (*symbols, *order),
+        )
+        return cursor.fetchall()
