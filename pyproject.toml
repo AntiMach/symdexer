@@ -1,0 +1,17 @@
+[project]
+name = "symdexer"
+version = "0.0.1"
+authors = [
+  { name="AntiMach", email="themachinumps@gmail.com" },
+]
+description = "A CLI for finding symbols"
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/antimach/symdexer"
