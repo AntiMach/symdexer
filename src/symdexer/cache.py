@@ -63,7 +63,7 @@ class Cache:
             INSERT OR IGNORE INTO Module (name, path, changed)
             VALUES (?, ? ,?)
             """,
-            (module.name, str(module.path), module.mtime),
+            (module.name, module.path.resolve(), module.mtime),
         )
 
         for symbol, sym_type in iter_symbols(module.path):
@@ -75,15 +75,16 @@ class Cache:
                 (symbol, sym_type, module.name),
             )
 
-    def search(self, symbols: list[str], fuzzy: bool, types: list[str]) -> Generator[tuple[str, str], None, None]:
+    def search(self, symbols: list[str], fuzzy: bool, types: list[str]) -> Generator[tuple[str, str, str], None, None]:
         symbol_t = "name LIKE ?" if fuzzy else "name = ?"
         symbols_t = " OR ".join(symbol_t for _ in symbols)
         types_t = " OR ".join("type = ?" for _ in types)
 
         cursor = self.db.execute(
             f"""
-            SELECT GROUP_CONCAT(name, ", ") as names, module
+            SELECT GROUP_CONCAT(Symbol.name, ", ") as names, module, path
             FROM Symbol
+            INNER JOIN Module ON module = Module.name
             WHERE ({symbols_t}) AND ({types_t})
             GROUP BY
                 module

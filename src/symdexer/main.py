@@ -7,13 +7,23 @@ from symdexer.symbols import SYM_TYPES
 from symdexer.types import package_type
 
 
-def find_command(cache_p: Path, symbols: list[str], fuzzy: bool, types: list[str]) -> None:
+def search_cache(cache_p: Path, symbols: list[str], fuzzy: bool, types: list[str]):
     if not cache_p.is_file():
         raise FileNotFoundError(f"Cache `{cache_p}` not found.")
 
     with Cache(cache_p) as cache:
-        for name, module in cache.search(symbols, fuzzy, types):
-            yield f"from {module} import {name}"
+        yield from cache.search(symbols, fuzzy, types)
+
+
+def find_command(cache_p: Path, symbols: list[str], fuzzy: bool, types: list[str]) -> None:
+    for names, module, _ in search_cache(cache_p, symbols, fuzzy):
+        yield f"from {module} import {names}"
+
+
+def locate_command(cache_p: Path, symbols: list[str], fuzzy: bool, types: list[str]) -> None:
+    for _, module, path in search_cache(cache_p, symbols, fuzzy):
+        yield module
+        yield path
 
 
 def index_command(cache_p: Path, packages: list[Path], reset: bool):
@@ -64,6 +74,35 @@ def main():
         help="If the symbols should be searched based on a pattern",
     )
     find_parser.add_argument(
+        "-t",
+        "--types",
+        dest="types",
+        metavar="SYM_TYPE",
+        choices=SYM_TYPES,
+        default=SYM_TYPES,
+        nargs="+",
+        help="Symbol types to show",
+    )
+
+    locate_parser = sub_parsers.add_parser(
+        "locate",
+        help="Locates the source paths of the modules where the given symbols reside",
+    )
+    locate_parser.add_argument(
+        "symbols",
+        metavar="SYMBOL",
+        nargs="+",
+        help="The symbols to look for",
+    )
+    locate_parser.add_argument(
+        "-f",
+        "--fuzzy",
+        dest="fuzzy",
+        action="store_true",
+        default=False,
+        help="If the symbols should be searched based on a pattern",
+    )
+    locate_parser.add_argument(
         "-t",
         "--types",
         dest="types",

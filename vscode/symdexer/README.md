@@ -2,17 +2,15 @@
 
 A python utilitly for quickly indexing symbols over specific, hard to index, directory trees.
 
-Written in Python (CLI) and TypeScript (VSC Extension).
+CLI Written in Python, extension written in TypeScript.
 
-**[Repository](https://github.com/antimach/symdexer)**
-
-**[PyPi](https://pypi.org/project/symdexer/)**
+*[Repository](https://github.com/antimach/symdexer)*
 
 ## Features
 
 Initialize symbol indexing configuration on your current workspace.
 
-Create/Reset the index cache for symbol lookup.
+Update or reset the index cache for symbol lookup.
 
 Instantly find the best import for the word the cursor is over.
 
@@ -23,18 +21,23 @@ To run this extension, you must have at least `Python 3.11` installed and the
 
 ```sh
 # install symdexer
-pip install symdexer
+pip install -U symdexer==0.2.1
 # check if symdexer was installed successully
-symdexer -h
+symdexer -v
 ```
 
 `symdexer` must be accessible via the environment's PATH.
 
 ## Extension Settings
 
-This extension provides the following configuration:
+This extension provides the following configurations:
 
-* `symdexer.configFile`: Specifies a file to use at the root of a workspace
+* `symdexer.cacheFile`: Specifies the cache's file location
+* `symdexer.packages`: Specifies the packages to index
+* `symdexer.types`: Specifies the symbol types to present
+* `symdexer.fuzzy`: Specifies if searching for symbols should be through a pattern or not
+* `symdexer.useVenv`: Specifies if the extension should search for packages on the current virtual environment
+* `symdexer.venvDir`: Specifies the current virtual environment's path
 
 ## Known Issues
 
@@ -44,6 +47,13 @@ Very specific at what it does still.
 
 ## Release Notes
 
+### 1.1.0
+
+* Removed the need for a settings file
+* New command: Locate symbol definition
+* Added more configurations
+* Added a built-in keybinding
+
 ### 1.0.0
 
-Initial release
+* Initial release

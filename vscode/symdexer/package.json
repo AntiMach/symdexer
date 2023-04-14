@@ -2,7 +2,7 @@
   "name": "symdexer",
   "displayName": "symdexer",
   "description": "A python symbol indexer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "engines": {
     "vscode": "^1.77.0"
   },
@@ -15,33 +15,72 @@
   "publisher": "AntiMach",
   "activationEvents": [],
   "main": "./out/extension.js",
+  "icon": "",
   "contributes": {
     "commands": [
       {
-        "command": "symdexer.init",
-        "title": "Symdexer: Initialize"
+        "command": "symdexer.reset",
+        "title": "Symdexer: Reset cache"
       },
       {
-        "command": "symdexer.cache",
+        "command": "symdexer.index",
         "title": "Symdexer: Cache index"
       },
       {
         "command": "symdexer.find",
         "title": "Symdexer: Find symbol"
+      },
+      {
+        "command": "symdexer.locate",
+        "title": "Symdexer: Locate symbol definition"
       }
     ],
     "configuration": [
       {
         "title": "Symdexer",
         "properties": {
-          "symdexer.configFile": {
+          "symdexer.cacheFile": {
             "type": "string",
-            "default": "symdexer.toml",
-            "description": "Default configuration file"
+            "default": ".symdex.db",
+            "description": "Default database file"
+          },
+          "symdexer.packages": {
+            "type": "array",
+            "default": [],
+            "description": "Package names to index"
+          },
+          "symdexer.types": {
+            "type": "array",
+            "default": [
+              "defines",
+              "assigns",
+              "imports"
+            ],
+            "description": "Symbol types to look for on editor"
+          },
+          "symdexer.fuzzy": {
+            "type": "boolean",
+            "default": false,
+            "description": "When finding a symbol, should the text be used as a pattern instead?"
+          },
+          "symdexer.useVenv": {
+            "type": "boolean",
+            "default": true,
+            "description": "Use the current workspace's venv configuration when possible"
+          },
+          "symdexer.venvDir": {
+            "type": "string",
+            "default": ".venv",
+            "description": "Specify a different venv directory"
           }
         }
       }
-    ]
+    ],
+    "keybindings": {
+      "command": "symdexer.find",
+      "key": "alt+oem_period",
+      "when": "editorTextFocus && editorLangId == 'python'"
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
