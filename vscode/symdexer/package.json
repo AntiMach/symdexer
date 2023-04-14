@@ -2,7 +2,7 @@
   "name": "symdexer",
   "displayName": "symdexer",
   "description": "A python symbol indexer",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "engines": {
     "vscode": "^1.77.0"
   },
@@ -25,7 +25,20 @@
         "command": "symdexer.find",
         "title": "Symdexer: Find symbol"
       }
-    ]
+    ],
+    "configuration": [
+      {
+        "title": "Symdexer",
+        "properties": {
+          "symdexer.configFile": {
+            "type": "string",
+            "default": "symdexer.toml",
+            "description": "Default configuration file"
+          }
+        }
+      }
+    ],
+    "configurationDefaults": {}
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
