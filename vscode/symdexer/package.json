@@ -9,6 +9,10 @@
   "categories": [
     "Other"
   ],
+  "repository": {
+    "url": "https://github.com/antimach/symdexer"
+  },
+  "publisher": "AntiMach",
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
@@ -37,8 +41,7 @@
           }
         }
       }
-    ],
-    "configurationDefaults": {}
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
