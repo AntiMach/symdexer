@@ -63,7 +63,7 @@ class Cache:
             INSERT OR IGNORE INTO Module (name, path, changed)
             VALUES (?, ? ,?)
             """,
-            (module.name, module.path.resolve(), module.mtime),
+            (module.name, str(module.path.resolve()), module.mtime),
         )
 
         for symbol, sym_type in iter_symbols(module.path):

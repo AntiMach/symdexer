@@ -21,7 +21,7 @@ To run this extension, you must have at least `Python 3.11` installed and the
 
 ```sh
 # install symdexer
-pip install -U symdexer==0.2.1
+pip install -U symdexer==0.2.2
 # check if symdexer was installed successully
 symdexer -v
 ```
