@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "symdexer"
-version = "0.1.2"
+version = "0.2.0"
 authors = [
   { name="AntiMach", email="themachinumps@gmail.com" },
 ]
-description = "A CLI for finding symbols"
+description = "A CLI for finding and indexing symbols"
 readme = "README.md"
 requires-python = ">=3.11"
 classifiers = [
@@ -19,7 +19,7 @@ classifiers = [
 
 
 [project.scripts]
-symdexer = "symdexer.__main__:main"
+symdexer = "symdexer.main:main"
 
 [project.urls]
 "Homepage" = "https://github.com/antimach/symdexer"

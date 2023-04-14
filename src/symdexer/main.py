@@ -1,69 +1,105 @@
+from pathlib import Path
 from argparse import ArgumentParser
 
+from symdexer.version import VERSION
+from symdexer.cache import Cache
 from symdexer.symbols import SYM_TYPES
-from symdexer.settings import load_settings
-from symdexer.cache import make_cache, search_cache
+from symdexer.types import package_type
 
 
-def find_command(settings_p: str, symbols: list[str], order: list[str]):
-    settings = load_settings(settings_p)
+def find_command(cache_p: Path, symbols: list[str], fuzzy: bool, types: list[str]) -> None:
+    if not cache_p.is_file():
+        raise FileNotFoundError(f"Cache `{cache_p}` not found.")
 
-    if not settings.cache.exists():
-        make_cache(settings.cache, settings.packages)
-
-    for name, module in search_cache(settings.cache, symbols, order or settings.order):
-        yield f"from {module} import {name}"
-
-
-def reset_cache_command(settings_p: str):
-    settings = load_settings(settings_p)
-
-    make_cache(settings.cache, settings.packages)
-
-    yield "cache reseted"
+    with Cache(cache_p) as cache:
+        for name, module in cache.search(symbols, fuzzy, types):
+            yield f"from {module} import {name}"
 
 
-def init_settings_command(settings_p: str):
-    with open(settings_p, "w", encoding="utf-8") as fp:
-        fp.write('cache = "symdex.db"\n')
-        fp.write('default_order = ["defines", "assigns", "imports"]\n')
-        fp.write("\n")
-        fp.write("[packages]\n")
-        fp.write('package_name = "path/to/package"\n')
+def index_command(cache_p: Path, packages: list[Path], reset: bool):
+    if not cache_p.exists():
+        reset = True
 
-    yield f"initialized {settings_p}"
+    with Cache(cache_p) as cache:
+        if reset:
+            cache.reset()
+        cache.update(packages)
+
+    yield "Done indexing"
 
 
 def main():
     parser = ArgumentParser("symdexer")
 
+    parser.add_argument("-v", "--version", action="version", version=VERSION)
+
     parser.add_argument(
-        "-s",
-        "--settings",
-        dest="settings",
+        "-c",
+        "--cache-file",
+        dest="cache",
         metavar="file",
-        default="symdexer.toml",
-        help="Name of the file to load the settings from",
+        default="symdex.db",
+        type=Path,
+        help="Name of the cache to store to and load from. Defaults to `symdex.db`",
     )
 
-    subp = parser.add_subparsers(required=True, dest="command")
+    sub_parsers = parser.add_subparsers(required=True, dest="command")
 
-    find = subp.add_parser("find", help="Searches the cache for symbols matching a list of patterns")
-    find.add_argument("patterns", metavar="PATTERN", nargs="+", help="The patterns to look for")
-    find.add_argument("-o", "--order", metavar="SYM_TYPE", choices=list(SYM_TYPES), nargs="+")
+    find_parser = sub_parsers.add_parser(
+        "find",
+        help="Searches the cache for symbols matching a list of patterns",
+    )
+    find_parser.add_argument(
+        "symbols",
+        metavar="SYMBOL",
+        nargs="+",
+        help="The symbols to look for",
+    )
+    find_parser.add_argument(
+        "-f",
+        "--fuzzy",
+        dest="fuzzy",
+        action="store_true",
+        default=False,
+        help="If the symbols should be searched based on a pattern",
+    )
+    find_parser.add_argument(
+        "-t",
+        "--types",
+        dest="types",
+        metavar="SYM_TYPE",
+        choices=SYM_TYPES,
+        default=SYM_TYPES,
+        nargs="+",
+        help="Symbol types to show",
+    )
 
-    subp.add_parser("reset-cache", help="Determines if the cache should be reset or not")
-
-    subp.add_parser("init", help="Creates a new configuration file")
+    cache_parser = sub_parsers.add_parser(
+        "index",
+        help="Load symbols into cache",
+    )
+    cache_parser.add_argument(
+        "-r",
+        "--reset",
+        dest="reset",
+        action="store_true",
+        default=False,
+        help="If the cache should be completely wiped",
+    )
+    cache_parser.add_argument(
+        "packages",
+        metavar="PACKAGE",
+        nargs="+",
+        type=package_type,
+        help="The packages to add to cache. May be package names or paths",
+    )
 
     args = parser.parse_args()
 
-    if args.command == "find":
-        res = find_command(args.settings, args.patterns, args.order)
-    elif args.command == "reset-cache":
-        res = reset_cache_command(args.settings)
-    elif args.command == "init":
-        res = init_settings_command(args.settings)
+    if args.command == "index":
+        res = index_command(args.cache, args.packages, args.reset)
+    elif args.command == "find":
+        res = find_command(args.cache, args.symbols, args.fuzzy, args.types)
 
     for line in res:
         print(line)
