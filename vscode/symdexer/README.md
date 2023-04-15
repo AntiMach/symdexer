@@ -21,7 +21,7 @@ To run this extension, you must have at least `Python 3.11` installed and the
 
 ```sh
 # install symdexer
-pip install -U symdexer==0.2.2
+pip install -U symdexer==0.2.3
 # check if symdexer was installed successully
 symdexer -v
 ```
@@ -46,13 +46,6 @@ Very specific at what it does still.
 *And quite possibly more than that*.
 
 ## Release Notes
-
-### 1.1.0
-
-* Removed the need for a settings file
-* New command: Locate symbol definition
-* Added more configurations
-* Added a built-in keybinding
 
 ### 1.0.0
 

@@ -5,7 +5,7 @@ import * as util from './util';
 
 export async function runIndex(reset: boolean): Promise<string> {
 	let packages = config.getPackages();
-	
+
 	return await util.showBusy(
 		'Indexing workspace',
 		util.runSymdexer('index', ...(reset ? ['-r'] : []), ...packages)
@@ -46,24 +46,29 @@ export async function runLocate(editor: vscode.TextEditor): Promise<string> {
 	let word = util.getSelectedText(editor);
 
 	let result = await util.runSymdexer('locate', ...(fuzzy ? ['-f'] : []), word, ...(types ? ['-t', ...types] : []));
-	let items = result.split("\n").filter(v => v !== "");
+	let items = result.split(/\r\n|\n/).filter(v => v !== "");
 
-    if (items.length === 0) {
+	if (items.length === 0) {
 		return 'No references found';
 	}
 
-	let modules = items.filter((_, i) => i % 2 === 1);
-	let paths = items.filter((_, i) => i % 2 === 0);
+	let modules = items.filter((_, i) => i % 3 === 1);
+	let paths = items.filter((_, i) => i % 3 === 2);
 
-    let selection = await vscode.window.showQuickPick(modules, {
+	let selection = await vscode.window.showQuickPick(modules, {
 		title: 'Results'
 	}) ?? '';
 
-    if (selection === '') {
+	if (selection === '') {
 		return '';
 	}
 
-    await vscode.workspace.openTextDocument(paths[modules.indexOf(selection)]);
+
+	let path = vscode.Uri.file(paths[modules.indexOf(selection)]);
+
+	await vscode.window.showTextDocument(
+		await vscode.workspace.openTextDocument(path)
+	);
 
 	return '';
 }

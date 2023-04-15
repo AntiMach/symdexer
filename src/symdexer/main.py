@@ -16,12 +16,13 @@ def search_cache(cache_p: Path, symbols: list[str], fuzzy: bool, types: list[str
 
 
 def find_command(cache_p: Path, symbols: list[str], fuzzy: bool, types: list[str]) -> None:
-    for names, module, _ in search_cache(cache_p, symbols, fuzzy):
+    for names, module, _ in search_cache(cache_p, symbols, fuzzy, types):
         yield f"from {module} import {names}"
 
 
 def locate_command(cache_p: Path, symbols: list[str], fuzzy: bool, types: list[str]) -> None:
-    for _, module, path in search_cache(cache_p, symbols, fuzzy):
+    for name, module, path in search_cache(cache_p, symbols, fuzzy, types):
+        yield name
         yield module
         yield path
 
@@ -139,6 +140,8 @@ def main():
         res = index_command(args.cache, args.packages, args.reset)
     elif args.command == "find":
         res = find_command(args.cache, args.symbols, args.fuzzy, args.types)
+    elif args.command == "locate":
+        res = locate_command(args.cache, args.symbols, args.fuzzy, args.types)
 
     for line in res:
         print(line)

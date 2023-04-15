@@ -76,7 +76,7 @@ class Cache:
             )
 
     def search(self, symbols: list[str], fuzzy: bool, types: list[str]) -> Generator[tuple[str, str, str], None, None]:
-        symbol_t = "name LIKE ?" if fuzzy else "name = ?"
+        symbol_t = "Symbol.name LIKE ?" if fuzzy else "Symbol.name = ?"
         symbols_t = " OR ".join(symbol_t for _ in symbols)
         types_t = " OR ".join("type = ?" for _ in types)
 
