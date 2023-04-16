@@ -15,23 +15,22 @@ def search_cache(cache_p: Path, symbols: list[str], fuzzy: bool, types: list[str
         yield from cache.search(symbols, fuzzy, types)
 
 
-def find_command(cache_p: Path, symbols: list[str], fuzzy: bool, types: list[str]) -> None:
-    for names, module, _ in search_cache(cache_p, symbols, fuzzy, types):
+def find_command(cache: Path, symbols: list[str], fuzzy: bool, types: list[str]) -> None:
+    for names, module, _ in search_cache(cache, symbols, fuzzy, types):
         yield f"from {module} import {names}"
 
 
-def locate_command(cache_p: Path, symbols: list[str], fuzzy: bool, types: list[str]) -> None:
-    for name, module, path in search_cache(cache_p, symbols, fuzzy, types):
+def locate_command(cache: Path, symbols: list[str], fuzzy: bool, types: list[str]) -> None:
+    for name, module, path in search_cache(cache, symbols, fuzzy, types):
         yield name
         yield module
         yield path
 
 
-def index_command(cache_p: Path, packages: list[Path], reset: bool):
-    if not cache_p.exists():
-        reset = True
+def index_command(cache: Path, packages: list[Path], reset: bool):
+    reset = reset or not cache.exists()
 
-    with Cache(cache_p) as cache:
+    with Cache(cache) as cache:
         if reset:
             cache.reset()
         cache.update(packages)
@@ -114,11 +113,11 @@ def main():
         help="Symbol types to show",
     )
 
-    cache_parser = sub_parsers.add_parser(
+    index_parser = sub_parsers.add_parser(
         "index",
         help="Load symbols into cache",
     )
-    cache_parser.add_argument(
+    index_parser.add_argument(
         "-r",
         "--reset",
         dest="reset",
@@ -126,7 +125,7 @@ def main():
         default=False,
         help="If the cache should be completely wiped",
     )
-    cache_parser.add_argument(
+    index_parser.add_argument(
         "packages",
         metavar="PACKAGE",
         nargs="+",

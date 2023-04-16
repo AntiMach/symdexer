@@ -47,14 +47,17 @@ class Cache:
         self.db.commit()
 
     def _cache_module(self, module: Module):
-        # checks if the module already exists and is outdated
+        moduleInfo = module.name, str(module.path.resolve()), module.mtime
+
+        # guard clause that returns when the module being indexed
+        # hasn't changed location or mtime since last index
         if self.db.execute(
             """
-            SELECT name, changed
+            SELECT name
             FROM Module
-            WHERE name = ? AND changed < ?
+            WHERE name = ? AND (path != ? OR changed != ?)
             """,
-            (module.name, module.mtime),
+            moduleInfo,
         ).fetchall():
             return
 
@@ -63,7 +66,7 @@ class Cache:
             INSERT OR IGNORE INTO Module (name, path, changed)
             VALUES (?, ? ,?)
             """,
-            (module.name, str(module.path.resolve()), module.mtime),
+            moduleInfo,
         )
 
         for symbol, sym_type in iter_symbols(module.path):

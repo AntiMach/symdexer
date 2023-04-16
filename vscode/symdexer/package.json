@@ -2,7 +2,9 @@
   "name": "symdexer",
   "displayName": "Symdexer (Python)",
   "description": "A python symbol indexer",
-  "version": "1.0.0",
+  "version": "1.1.0",
+  "publisher": "AntiMach",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.77.0"
   },
@@ -10,10 +12,17 @@
     "Other"
   ],
   "repository": {
+    "type": "git",
     "url": "https://github.com/antimach/symdexer"
   },
-  "publisher": "AntiMach",
-  "activationEvents": [],
+  "keywords": [
+    "python",
+    "symdexer"
+  ],
+  "activationEvents": [
+    "onLanguage:python",
+    "workspaceContains:*.py"
+  ],
   "main": "./out/extension.js",
   "icon": "./icon128.png",
   "contributes": {
@@ -42,36 +51,42 @@
           "symdexer.cacheFile": {
             "type": "string",
             "default": "symdex.db",
-            "description": "Location of database file to use"
+            "description": "Location of database file to use."
           },
           "symdexer.packages": {
             "type": "array",
+            "items": {
+              "type": "string"
+            },
             "default": [],
-            "description": "Package names to index"
+            "description": "Package names/paths to index."
           },
           "symdexer.types": {
             "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "defines",
+                "assigns",
+                "imports"
+              ]
+            },
             "default": [
               "defines",
               "assigns",
               "imports"
             ],
-            "description": "Symbol types to look for on editor"
+            "description": "Symbol types to look for on editor."
           },
           "symdexer.fuzzy": {
             "type": "boolean",
             "default": false,
             "description": "When finding a symbol, should the text be used as a pattern instead?"
           },
-          "symdexer.useVenv": {
-            "type": "boolean",
-            "default": true,
-            "description": "Use the current workspace's venv configuration when possible"
-          },
           "symdexer.venvDir": {
             "type": "string",
             "default": ".venv",
-            "description": "Specify a different venv directory"
+            "description": "Specify a virtual environment folder to look for imports."
           }
         }
       }
