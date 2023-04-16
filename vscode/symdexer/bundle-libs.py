@@ -8,6 +8,7 @@ def main():
                 "python",
                 "-m",
                 "pip",
+                "install",
                 "-t",
                 "./bundled/libs",
                 "--no-cache-dir",

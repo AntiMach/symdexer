@@ -2,7 +2,7 @@
   "name": "symdexer",
   "displayName": "Symdexer (Python)",
   "description": "A python symbol indexer",
-  "version": "1.1.0",
+  "version": "1.0.1",
   "publisher": "AntiMach",
   "license": "MIT",
   "engines": {
