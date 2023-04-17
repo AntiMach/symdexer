@@ -1,15 +1,18 @@
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Generator
 from dataclasses import dataclass
-from functools import cached_property
+from functools import lru_cache
 
 
-@dataclass
+@dataclass(frozen=True)
 class Module:
     path: Path
     name: str
 
-    @cached_property
+    @property
+    @lru_cache(maxsize=None)
     def mtime(self):
         return int(self.path.stat().st_mtime)
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ast
 from pathlib import Path
 
@@ -33,11 +35,13 @@ SYM_MAP = {
 
 
 def iter_symbols(path: Path):
+    # sourcery skip: use-named-expression
     try:
         root = ast.parse(path.read_text("utf-8"))
     except SyntaxError:
         return
 
     for node in ast.iter_child_nodes(root):
-        if func := SYM_MAP.get(type(node)):
+        func = SYM_MAP.get(type(node))
+        if func:
             yield from func(node)

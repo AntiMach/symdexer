@@ -16,7 +16,7 @@ Instantly find the best import for the selected word.
 
 ## Requirements
 
-To run this extension, you must have at least `Python 3.11` installed.
+To run this extension, you must have `Python 3.7` or higher installed.
 
 ## Extension Settings
 
@@ -33,6 +33,10 @@ This extension provides the following configurations:
 None that I know of yet.
 
 ## Release Notes
+
+### [1.0.2]
+
+- Added backwards compatibility for Python
 
 ### [1.0.1]
 
