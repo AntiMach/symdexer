@@ -1,148 +1,49 @@
 from __future__ import annotations
 
-from pathlib import Path
-from argparse import ArgumentParser
+from typing import Iterator
 
-from symdexer.version import VERSION
 from symdexer.cache import Cache
-from symdexer.symbols import SYM_TYPES
-from symdexer.types import package_type
+from symdexer.parser import Arguments, parse_args
 
 
-def search_cache(cache_p: Path, symbols: list[str], fuzzy: bool, types: list[str]):
-    if not cache_p.is_file():
-        raise FileNotFoundError(f"Cache `{cache_p}` not found.")
+def search_cache(args: Arguments):
+    if not args.cache.is_file():
+        raise FileNotFoundError(f"Cache `{args.cache}` not found.")
 
-    with Cache(cache_p) as cache:
-        yield from cache.search(symbols, fuzzy, types)
-
-
-def find_command(cache: Path, symbols: list[str], fuzzy: bool, types: list[str]) -> None:
-    for names, module, _ in search_cache(cache, symbols, fuzzy, types):
-        yield f"from {module} import {names}"
+    with Cache(args.cache) as cache:
+        return cache.search(args.symbols, args.types, args.fuzzy)
 
 
-def locate_command(cache: Path, symbols: list[str], fuzzy: bool, types: list[str]) -> None:
-    for name, module, path in search_cache(cache, symbols, fuzzy, types):
-        yield name
-        yield module
-        yield path
+def index_command(args: Arguments) -> Iterator[str]:
+    reset = args.reset or not args.cache.exists()
 
-
-def index_command(cache: Path, packages: list[Path], reset: bool):
-    reset = reset or not cache.exists()
-
-    with Cache(cache) as cache:
+    with Cache(args.cache) as cache:
         if reset:
             cache.reset()
-        cache.update(packages)
+        cache.update(args.packages)
 
     yield "Done indexing"
 
 
+def find_command(args: Arguments) -> Iterator[str]:
+    for names, module, _ in search_cache(args):
+        yield f"from {module} import {names}"
+
+
+def locate_command(args: Arguments) -> Iterator[str]:
+    for values in search_cache(args):
+        yield from values
+
+
 def main():
-    parser = ArgumentParser("symdexer")
-
-    parser.add_argument("-v", "--version", action="version", version=VERSION)
-
-    parser.add_argument(
-        "-c",
-        "--cache-file",
-        dest="cache",
-        metavar="file",
-        default="symdex.db",
-        type=Path,
-        help="Name of the cache to store to and load from. Defaults to `symdex.db`",
-    )
-
-    sub_parsers = parser.add_subparsers(required=True, dest="command")
-
-    find_parser = sub_parsers.add_parser(
-        "find",
-        help="Searches the cache for symbols matching a list of patterns",
-    )
-    find_parser.add_argument(
-        "symbols",
-        metavar="SYMBOL",
-        nargs="+",
-        help="The symbols to look for",
-    )
-    find_parser.add_argument(
-        "-f",
-        "--fuzzy",
-        dest="fuzzy",
-        action="store_true",
-        default=False,
-        help="If the symbols should be searched based on a pattern",
-    )
-    find_parser.add_argument(
-        "-t",
-        "--types",
-        dest="types",
-        metavar="SYM_TYPE",
-        choices=SYM_TYPES,
-        default=SYM_TYPES,
-        nargs="+",
-        help="Symbol types to show",
-    )
-
-    locate_parser = sub_parsers.add_parser(
-        "locate",
-        help="Locates the source paths of the modules where the given symbols reside",
-    )
-    locate_parser.add_argument(
-        "symbols",
-        metavar="SYMBOL",
-        nargs="+",
-        help="The symbols to look for",
-    )
-    locate_parser.add_argument(
-        "-f",
-        "--fuzzy",
-        dest="fuzzy",
-        action="store_true",
-        default=False,
-        help="If the symbols should be searched based on a pattern",
-    )
-    locate_parser.add_argument(
-        "-t",
-        "--types",
-        dest="types",
-        metavar="SYM_TYPE",
-        choices=SYM_TYPES,
-        default=SYM_TYPES,
-        nargs="+",
-        help="Symbol types to show",
-    )
-
-    index_parser = sub_parsers.add_parser(
-        "index",
-        help="Load symbols into cache",
-    )
-    index_parser.add_argument(
-        "-r",
-        "--reset",
-        dest="reset",
-        action="store_true",
-        default=False,
-        help="If the cache should be completely wiped",
-    )
-    index_parser.add_argument(
-        "packages",
-        metavar="PACKAGE",
-        nargs="+",
-        type=package_type,
-        help="The packages to add to cache. May be package names or paths",
-    )
-
-    args = parser.parse_args()
+    args = parse_args()
 
     if args.command == "index":
-        res = index_command(args.cache, args.packages, args.reset)
+        cmd = index_command
     elif args.command == "find":
-        res = find_command(args.cache, args.symbols, args.fuzzy, args.types)
+        cmd = find_command
     elif args.command == "locate":
-        res = locate_command(args.cache, args.symbols, args.fuzzy, args.types)
+        cmd = locate_command
 
-    for line in res:
+    for line in cmd(args):
         print(line)

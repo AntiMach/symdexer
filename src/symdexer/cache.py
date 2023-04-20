@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
-from typing import Generator
+from typing import Iterator
 
 from symdexer.symbols import iter_symbols
 from symdexer.modules import walk_modules, Module
@@ -35,7 +35,7 @@ class Cache:
             CREATE TABLE Symbol (
                 name TEXT NOT NULL,
                 type TEXT NOT NULL,
-                module TEXT NOT NULL REFERENCES Module(name),
+                module TEXT NOT NULL REFERENCES Module(name) ON UPDATE CASCADE,
                 UNIQUE (name, type, module)
             );
             """
@@ -49,39 +49,35 @@ class Cache:
         self.db.commit()
 
     def _cache_module(self, module: Module):
-        moduleInfo = module.name, str(module.path.resolve()), module.mtime
-
-        # guard clause that returns when the module being indexed
-        # hasn't changed location or mtime since last index
         if self.db.execute(
             """
-            SELECT name
-            FROM Module
+            SELECT path, changed
+            FROM module
             WHERE name = ? AND (path != ? OR changed != ?)
             """,
-            moduleInfo,
+            module.info,
         ).fetchall():
             return
 
         self.db.execute(
             """
-            INSERT OR IGNORE INTO Module (name, path, changed)
+            INSERT OR REPLACE INTO Module (name, path, changed)
             VALUES (?, ? ,?)
             """,
-            moduleInfo,
+            module.info,
         )
 
         for symbol, sym_type in iter_symbols(module.path):
             self.db.execute(
                 """
-                INSERT OR IGNORE INTO Symbol (name, type, module)
+                INSERT OR REPLACE INTO Symbol (name, type, module)
                 VALUES (?, ? ,?)
                 """,
                 (symbol, sym_type, module.name),
             )
 
-    def search(self, symbols: list[str], fuzzy: bool, types: list[str]) -> Generator[tuple[str, str, str], None, None]:
-        symbol_t = "Symbol.name LIKE ?" if fuzzy else "Symbol.name = ?"
+    def search(self, symbols: list[str], types: list[str], fuzzy: str) -> Iterator[tuple[str, str, str]]:
+        symbol_t = "Symbol.name LIKE %?%" if fuzzy else "Symbol.name = ?"
         symbols_t = " OR ".join(symbol_t for _ in symbols)
         types_t = " OR ".join("type = ?" for _ in types)
 
@@ -91,10 +87,8 @@ class Cache:
             FROM Symbol
             INNER JOIN Module ON module = Module.name
             WHERE ({symbols_t}) AND ({types_t})
-            GROUP BY
-                module
-            ORDER BY
-                LENGTH(module) + LENGTH(names) ASC
+            GROUP BY module
+            ORDER BY LENGTH(module) + LENGTH(names) ASC
             """,
             (*symbols, *types),
         )
