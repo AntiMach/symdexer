@@ -19,7 +19,7 @@ class Cache:
     def __exit__(self, *args, **kwargs):
         self.db.__exit__(*args, **kwargs)
 
-    def reset(self):
+    def init(self):
         self.db.executescript(
             """
             DROP TABLE IF EXISTS Module;
@@ -41,14 +41,15 @@ class Cache:
             """
         )
 
-    def update(self, packages: list[Path]):
+    def update(self, packages: list[Path]) -> Iterator[Module]:
         for path in packages:
             for module in walk_modules(path):
-                self._cache_module(module)
+                yield module
+                self._index_module(module)
 
         self.db.commit()
 
-    def _cache_module(self, module: Module):
+    def _index_module(self, module: Module):
         if self.db.execute(
             """
             SELECT path, changed
@@ -76,8 +77,36 @@ class Cache:
                 (symbol, sym_type, module.name),
             )
 
-    def search(self, symbols: list[str], types: list[str], fuzzy: str) -> Iterator[tuple[str, str, str]]:
-        symbol_t = "Symbol.name LIKE %?%" if fuzzy else "Symbol.name = ?"
+    def ungrouped(self, symbols: list[str], types: list[str], fuzzy: str) -> Iterator[tuple[str, str, str]]:
+        if fuzzy:
+            symbols = [f"%{s}%" for s in symbols]
+            symbol_t = "Symbol.name LIKE ?"
+        else:
+            symbol_t = "Symbol.name = ?"
+
+        symbols_t = " OR ".join(symbol_t for _ in symbols)
+        types_t = " OR ".join("type = ?" for _ in types)
+
+        cursor = self.db.execute(
+            f"""
+            SELECT Symbol.name, module, path
+            FROM Symbol
+            INNER JOIN Module ON module = Module.name
+            WHERE ({symbols_t}) AND ({types_t})
+            ORDER BY LENGTH(module) + LENGTH(Symbol.name) ASC
+            """,
+            (*symbols, *types),
+        )
+
+        return cursor.fetchall()
+
+    def grouped(self, symbols: list[str], types: list[str], fuzzy: str) -> Iterator[tuple[str, str, str]]:
+        if fuzzy:
+            symbols = [f"%{s}%" for s in symbols]
+            symbol_t = "Symbol.name LIKE ?"
+        else:
+            symbol_t = "Symbol.name = ?"
+
         symbols_t = " OR ".join(symbol_t for _ in symbols)
         types_t = " OR ".join("type = ?" for _ in types)
 

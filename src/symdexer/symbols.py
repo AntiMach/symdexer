@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 from pathlib import Path
+from typing import Iterator
 
 
 IMPORTS = "imports"
@@ -34,7 +35,7 @@ SYM_MAP = {
 }
 
 
-def iter_symbols(path: Path):
+def iter_symbols(path: Path) -> Iterator[tuple[str, str]]:
     # sourcery skip: use-named-expression
     try:
         root = ast.parse(path.read_text("utf-8"))
