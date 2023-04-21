@@ -19,16 +19,16 @@ class Cache:
     def __exit__(self, *args, **kwargs):
         self.db.__exit__(*args, **kwargs)
 
-    def init(self):
+    def update(self, packages: list[Path]) -> Iterator[Module]:
         self.db.executescript(
             """
-            CREATE TABLE Module (
+            CREATE TABLE IF NOT EXISTS Module (
                 name TEXT PRIMARY KEY,
                 path TEXT NOT NULL,
                 changed NUMBER NOT NULL
             );
 
-            CREATE TABLE Symbol (
+            CREATE TABLE IF NOT EXISTS Symbol (
                 name TEXT NOT NULL,
                 type TEXT NOT NULL,
                 module TEXT NOT NULL REFERENCES Module(name) ON UPDATE CASCADE,
@@ -37,11 +37,10 @@ class Cache:
             """
         )
 
-    def update(self, packages: list[Path]) -> Iterator[Module]:
         for path in packages:
             for module in walk_modules(path):
-                yield module
-                self._index_module(module)
+                if self._index_module(module):
+                    yield module
 
         self.db.commit()
 
@@ -49,12 +48,12 @@ class Cache:
         if self.db.execute(
             """
             SELECT path, changed
-            FROM module
-            WHERE name = ? AND (path != ? OR changed != ?)
+            FROM Module
+            WHERE name = ? AND (path == ? AND changed == ?)
             """,
             module.info,
         ).fetchall():
-            return
+            return False
 
         self.db.execute(
             """
@@ -72,6 +71,8 @@ class Cache:
                 """,
                 (symbol, sym_type, module.name),
             )
+
+        return True
 
     def ungrouped(self, symbols: list[str], types: list[str], fuzzy: str) -> Iterator[tuple[str, str, str]]:
         if fuzzy:

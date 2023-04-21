@@ -2,28 +2,6 @@ import * as fs from './fsExtra';
 import * as vscode from 'vscode';
 
 
-export function showBusy<T>(title: string, promise: Promise<T>): Promise<T> {
-    return new Promise<T>((resolve, reject) => {
-        vscode.window.withProgress({
-            location: vscode.ProgressLocation.Notification,
-            cancellable: false,
-            title: title,
-        }, async (prog) => {
-            prog.report({ increment: 0 });
-
-            try {
-                resolve(await promise);
-            }
-            catch (err) {
-                reject(err);
-            }
-
-            prog.report({ increment: 100 });
-        });
-    });
-}
-
-
 export function getProjectRoot(): string {
     const workspaces = vscode.workspace.workspaceFolders ?? [];
     if (workspaces.length === 0) {
@@ -59,13 +37,19 @@ export function getSelectedRange(editor: vscode.TextEditor): vscode.Range {
     let range = new vscode.Range(editor.selection.start, editor.selection.end);
 
     if (range.isEmpty) {
-        range = editor.document.getWordRangeAtPosition(editor.selection.active)!;
+        range = editor.document.getWordRangeAtPosition(editor.selection.active) ?? range;
     }
 
     return range;
 }
 
 
-export function getSelectedText(editor: vscode.TextEditor): string {
-    return editor.document.getText(getSelectedRange(editor));
+export async function getSelectedText(editor: vscode.TextEditor): Promise<string | undefined> {
+    let range = getSelectedRange(editor);
+
+    if (range.isEmpty) {
+        return await vscode.window.showInputBox({ placeHolder: 'Text' });
+    }
+
+    return editor.document.getText(range);
 }

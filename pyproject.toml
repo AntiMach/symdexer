@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "symdexer"
-version = "0.2.8"
+version = "0.2.10"
 authors = [
   { name="AntiMach", email="themachinumps@gmail.com" },
 ]

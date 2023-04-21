@@ -1,1 +1,1 @@
-symdexer==0.2.8
+symdexer==0.2.10

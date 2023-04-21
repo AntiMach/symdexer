@@ -25,9 +25,6 @@ def index_command(args: Arguments) -> Iterator[str]:
         args.cache.unlink()
 
     with Cache(args.cache) as cache:
-        if args.reset:
-            cache.init()
-
         for module in cache.update(args.packages):
             yield f"Indexing {module.name}"
 

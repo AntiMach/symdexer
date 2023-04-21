@@ -22,11 +22,13 @@ To run this extension, you must have `Python 3.7` or higher installed.
 
 This extension provides the following configurations:
 
-* `symdexer.cacheFile`: Specifies the cache's file location
-* `symdexer.packages`: Specifies the packages to index
-* `symdexer.types`: Specifies the symbol types to present
-* `symdexer.fuzzy`: Specifies if searching for symbols should be through a pattern or not
-* `symdexer.venvDir`: Specifies the current virtual environment's path
+* `symdexer.interpreter`: Specifies python interpreters to look for.
+* `symdexer.venvDir`: Specifies the current virtual environment's path.
+* `symdexer.useVenv`: Specifies if the current virtual environment's path should be used.
+* `symdexer.cacheFile`: Specifies the cache's file location.
+* `symdexer.packages`: Specifies the packages to index.
+* `symdexer.import/locate.fuzzy`: Specifies if searching for symbols should be through a pattern or not.
+* `symdexer.import/locate.types`: Specifies the symbol types to present.
 
 ## Known Issues
 
@@ -34,16 +36,24 @@ None that I know of yet.
 
 ## Release Notes
 
+### [1.1.0]
+
+- Improved item selection.
+- Improved error messages.
+- Added specific fuzzy/types configs.
+- Added option to specify python interpreters.
+- Added option to use the virtual environment directory.
+
 ### [1.0.2]
 
-- Added backwards compatibility for Python
+- Added backwards compatibility for Python.
 
 ### [1.0.1]
 
-- Changed the way imports are looked for
-- Removed the need to install symdexer manually
-- Removed symdexer.useVenv
+- Changed the way imports are looked for.
+- Removed the need to install symdexer manually.
+- Removed symdexer.useVenv.
 
 ### [1.0.0]
 
-- Initial release
+- Initial release.

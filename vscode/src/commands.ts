@@ -1,113 +1,110 @@
 import * as vscode from 'vscode';
 
 import * as vsapi from './common/vsapi';
-import * as subproc from './common/subproc';
 import * as config from './common/config';
+import * as subproc from './common/subproc';
 
 
-class ImportLikeResult {
-    names: string[];
-    modules: string[];
-    paths: string[];
+interface Symbol {
+    symbol?: string;
+    module?: string;
+    path?: string;
+}
 
-    constructor(names: string[], modules: string[], paths: string[]) {
-        this.names = names;
-        this.modules = modules;
-        this.paths = paths;
-    }
+type QuickPickSymbol = vscode.QuickPickItem & Symbol;
 
-    empty() {
-        return !this.names.length || !this.modules.length || !this.paths.length;
-    }
 
-    imports() {
-        let max = Math.min(this.names.length, this.modules.length);
-        let result = [];
+export async function runIndex(_: vscode.TextEditor, reset: boolean): Promise<string> {
+    let packages = config.packages();
+    let symdexer = subproc.symdexer('index', ...packages, ...(reset ? ['-r'] : []));
 
-        for (let i = 0; i < max; i++) {
-            result.push(`from ${this.modules[i]} import ${this.names[i]}`);
-        }
+    return vscode.window.withProgress({
+        location: vscode.ProgressLocation.Notification,
+        cancellable: false,
+        title: 'Indexing workspace',
+    }, async (prog, token) => {
+        return new Promise((resolve, reject) => {
+            symdexer.on('success', () => {
+                resolve('Done indexing');
+            });
 
-        return result;
-    }
+            symdexer.on('error', err => {
+                reject(new Error(err));
+            });
+
+            token.onCancellationRequested(() => {
+                symdexer.emit('kill');
+                resolve('Cancelled indexing');
+            });
+        });
+    });
 }
 
 
-async function runImportLike(editor: vscode.TextEditor, command: string): Promise<ImportLikeResult> {
+async function runImportLike(editor: vscode.TextEditor, command: string): Promise<QuickPickSymbol> {
+    let word = await vsapi.getSelectedText(editor);
+
+    if (word === undefined) {
+        // eslint-disable-next-line no-throw-literal
+        throw new Error();
+    }
+
     let types: string[] = config.types(command);
     let fuzzy: boolean = config.fuzzy(command);
 
-    let output = await subproc.runSymdexer(
+    let output = await subproc.symdexerAsync(
         'locate',
-        vsapi.getSelectedText(editor),
+        word,
         ...(types ? ['-t', ...types] : []),
         ...(fuzzy ? ['-f'] : [])
     );
 
-    let items = output.split(/\r?\n/).filter(v => v);
+    let lines = output.split(/\r?\n/).filter(v => v);
 
-    let result: [string[], string[], string[]] = [[], [], []];
-
-    for (let i = 0; i < items.length; i++) {
-        result[i % 3].push(items[i]);
+    if (lines.length === 0) {
+        // eslint-disable-next-line no-throw-literal
+        throw new Error('Not found');
     }
 
-    return new ImportLikeResult(...result);
-}
+    let items: QuickPickSymbol[] = [];
 
+    for (let i = 0; i < lines.length; i += 3) {
+        let [symbol, module, path] = lines.slice(i, i + 3);
 
-export async function runIndex(reset: boolean): Promise<string> {
-    let packages = config.packages();
-
-    await vsapi.showBusy(
-        'Indexing workspace',
-        subproc.runSymdexer('index', ...packages, ...(reset ? ['-r'] : []))
-    );
-
-    return 'Done indexing';
-}
-
-
-export async function runImport(editor: vscode.TextEditor): Promise<string> {
-    let result = await runImportLike(editor, 'import');
-
-    if (result.empty()) {
-        return 'No items found';
-    }
-
-    let imports = result.imports();
-
-    let selection = await vscode.window.showQuickPick(imports, { title: 'Results' }) ?? '';
-    let name = result.names[imports.indexOf(selection)];
-
-    if (name) {
-        await editor.edit(eb => {
-            eb.insert(new vscode.Position(0, 0), selection + '\n');
-            eb.replace(vsapi.getSelectedRange(editor), name);
+        items.push({
+            label: `import ${symbol}`,
+            detail: `from ${module}`,
+            symbol, module, path
         });
     }
 
-    return '';
+    let selection = await vscode.window.showQuickPick(items, { title: 'Select symbol' });
+
+    if (selection === undefined) {
+        // eslint-disable-next-line no-throw-literal
+        throw new Error();
+    }
+
+    return selection;
 }
 
 
-export async function runLocate(editor: vscode.TextEditor): Promise<string> {
-    let result = await runImportLike(editor, 'locate');
+export async function runImport(editor: vscode.TextEditor): Promise<void> {
+    let { module, symbol } = await runImportLike(editor, 'import');
 
-    if (result.empty()) {
-        return 'No items found';
-    }
+    await editor.edit(eb => {
+        eb.insert(new vscode.Position(0, 0), `from ${module} import ${symbol}\n`);
+        eb.replace(vsapi.getSelectedRange(editor), symbol!);
+    });
+}
 
-    let selection = await vscode.window.showQuickPick(result.modules, { title: 'Results' }) ?? '';
-    let path = result.paths[result.modules.indexOf(selection)];
 
-    if (path) {
-        await vscode.window.showTextDocument(
-            await vscode.workspace.openTextDocument(
-                vscode.Uri.file(path)
-            )
-        );
-    }
+export async function runLocate(editor: vscode.TextEditor): Promise<void> {
+    let { path } = await runImportLike(editor, 'locate');
 
-    return '';
+    await vscode.window.showTextDocument(
+        await vscode.workspace.openTextDocument(
+            vscode.Uri.file(path!)
+        )
+    );
 }

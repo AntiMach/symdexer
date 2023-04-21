@@ -1,83 +1,96 @@
-import * as path from 'path';
 import { spawn } from 'child_process';
 
-import * as fs from './fsExtra';
 import * as vsapi from './vsapi';
+import * as python from './python';
 import * as config from './config';
+import { EventEmitter } from 'events';
 
 
-export function run(cwd: string, ...args: string[]): Promise<string> {
-    return new Promise<string>((resolve, reject) => {
-        let env = { ...process.env };
+declare interface ProcessEventEmitter {
+    on(eventName: 'kill', listener: () => void): void;
+    on(eventName: 'line', listener: (line: string) => void): void;
+    on(eventName: 'error', listener: (result: string) => void): void;
+    on(eventName: 'success', listener: (result: string) => void): void;
 
-        if (config.useVenv()) {
-            env.VENV_DIR = config.venvDir();
-        }
-
-        const proc = spawn(args[0], args.slice(1), {
-            cwd: cwd,
-            env: env
-        });
-
-        let result = "";
-        let error = "";
-
-        proc.stdout.on('data', chunk => {
-            result += chunk;
-        });
-
-        proc.stderr.on('data', chunk => {
-            error += chunk;
-        });
-
-        proc.on('close', code => {
-            if (code === 0) {
-                resolve(result);
-            }
-            else {
-                reject(error);
-            }
-        });
-
-        proc.on('error', (err) => {
-            reject(err.message);
-        });
-    });
+    emit(eventName: 'kill'): void;
+    emit(eventName: 'line', line: string): void;
+    emit(eventName: 'error', result: string): void;
+    emit(eventName: 'success', result: string): void;
 }
 
 
-export function runSymdexer(...args: string[]): Promise<string> {
-    let cwd = vsapi.getProjectRoot();
-    let conf = config.cacheFile();
+export function run(...args: string[]): ProcessEventEmitter {
+    let emitter: ProcessEventEmitter = new EventEmitter();
 
-    return run(cwd, findPythonInterpreter(), config.SCRIPT_PATH, '-c', conf, ...args);
-}
+    let env = { ...process.env };
 
-
-export function findPythonInterpreter(): string {
-    let bins = config.interpreter();
-
-    let PATH = (process.env.PATH ?? '').split(path.delimiter);
-    PATH.unshift(vsapi.getProjectRoot());
-
-    let PATHEXT = process.env.PATHEXT?.split(path.delimiter) ?? [];
-    PATHEXT.unshift('');
-
-    for (let dir of PATH) {
-        if (!fs.isDirectory(dir)) {
-            continue;
-        }
-
-        for (let bin of bins) {
-            for (let ext of PATHEXT) {
-                let loc = path.join(dir, `${bin}${ext}`);
-
-                if (fs.isFile(loc)) {
-                    return loc;
-                }
-            }
-        }
+    if (config.useVenv()) {
+        env.VENV_DIR = config.venvDir();
     }
 
-    throw new Error('Could not find a valid interpreter');
+    const proc = spawn(args[0], args.slice(1), {
+        cwd: vsapi.getProjectRoot(),
+        env: env
+    });
+
+    let part = "";
+    let stdout = "";
+    let stderr = "";
+
+    proc.stdout.on('data', chunk => {
+        stdout += chunk;
+        part += chunk;
+
+        let lines = part.split(/\r?\n/);
+        [part] = lines.splice(lines.length - 1);
+
+        for (let line of lines) {
+            if (line) {
+                emitter.emit('line', line);
+            }
+        }
+    });
+
+    proc.stderr.on('data', chunk => {
+        stderr += chunk;
+    });
+
+    proc.on('close', code => {
+        if (code === 0) {
+            emitter.emit('success', stdout);
+        }
+        else {
+            emitter.emit('error', stderr);
+        }
+    });
+
+    proc.on('error', (err) => {
+        emitter.emit('error', err.message);
+    });
+
+    emitter.on('kill', () => {
+        proc.kill('SIGINT');
+    });
+
+    return emitter;
+}
+
+
+export function symdexer(...args: string[]): ProcessEventEmitter {
+    return run(
+        python.getInterpreter(),
+        config.SCRIPT_PATH,
+        '-c', config.cacheFile(),
+        ...args
+    );
+}
+
+
+export function symdexerAsync(...args: string[]): Promise<string> {
+    return new Promise((resolve, reject) => {
+        let emitter = symdexer(...args);
+
+        emitter.on('error', reject);
+        emitter.on('success', resolve);
+    });
 }

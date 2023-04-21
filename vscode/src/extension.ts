@@ -2,32 +2,28 @@ import * as vscode from 'vscode';
 import * as commands from './commands';
 
 
+function command<T>(name: string, callback: (editor: vscode.TextEditor, ...args: any[]) => Thenable<T>, ...args: any[]) {
+    return vscode.commands.registerTextEditorCommand(name, async (editor) => {
+        try {
+            let result = await callback(editor, ...args);
+            if (typeof result === 'string') {
+                vscode.window.showInformationMessage(result);
+            }
+        } catch (e) {
+            if (e instanceof Error) {
+                vscode.window.showErrorMessage(e.message);
+            }
+        }
+    });
+}
+
+
 export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
-        vscode.commands.registerCommand('symdexer.reset', () => {
-            commands.runIndex(true).then(
-                vscode.window.showInformationMessage,
-                vscode.window.showErrorMessage
-            );
-        }),
-        vscode.commands.registerCommand('symdexer.index', () => {
-            commands.runIndex(false).then(
-                vscode.window.showInformationMessage,
-                vscode.window.showErrorMessage
-            );
-        }),
-        vscode.commands.registerTextEditorCommand('symdexer.import', editor => {
-            commands.runImport(editor).then(
-                vscode.window.showInformationMessage,
-                vscode.window.showErrorMessage
-            );
-        }),
-        vscode.commands.registerTextEditorCommand('symdexer.locate', editor => {
-            commands.runLocate(editor).then(
-                vscode.window.showInformationMessage,
-                vscode.window.showErrorMessage
-            );
-        }),
+        command('symdexer.reset', commands.runIndex, true),
+        command('symdexer.index', commands.runIndex, false),
+        command('symdexer.import', commands.runImport),
+        command('symdexer.locate', commands.runLocate)
     );
 }
 

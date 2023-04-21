@@ -2,5 +2,4 @@ dist/
 .venv/
 Symdexer.egg-info/
 __pycache__/
-symdexer.toml
 symdex.db

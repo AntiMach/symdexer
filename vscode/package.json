@@ -2,7 +2,7 @@
   "name": "symdexer",
   "displayName": "Symdexer (Python)",
   "description": "A python symbol indexer",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "publisher": "AntiMach",
   "license": "MIT",
   "engines": {
@@ -46,7 +46,7 @@
     ],
     "configuration": [
       {
-        "title": "Symdexer (Common)",
+        "title": "Common",
         "properties": {
           "symdexer.interpreter": {
             "type": "array",
@@ -85,7 +85,7 @@
         }
       },
       {
-        "title": "Symdexer (Import)",
+        "title": "Import",
         "properties": {
           "symdexer.import.types": {
             "type": "array",
@@ -110,7 +110,7 @@
         }
       },
       {
-        "title": "Symdexer (Locate)",
+        "title": "Locate",
         "properties": {
           "symdexer.locate.types": {
             "type": "array",
@@ -137,11 +137,18 @@
         }
       }
     ],
-    "keybindings": {
-      "command": "symdexer.find",
-      "key": "alt+oem_period",
-      "when": "editorTextFocus && editorLangId == 'python'"
-    }
+    "keybindings": [
+      {
+        "command": "symdexer.import",
+        "key": "alt+oem_period",
+        "when": "editorTextFocus && editorLangId == 'python'"
+      },
+      {
+        "command": "symdexer.locate",
+        "key": "ctrl+alt+oem_period",
+        "when": "editorTextFocus && editorLangId == 'python'"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
