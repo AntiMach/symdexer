@@ -22,10 +22,6 @@ class Cache:
     def init(self):
         self.db.executescript(
             """
-            DROP TABLE IF EXISTS Module;
-
-            DROP TABLE IF EXISTS Symbol;
-
             CREATE TABLE Module (
                 name TEXT PRIMARY KEY,
                 path TEXT NOT NULL,

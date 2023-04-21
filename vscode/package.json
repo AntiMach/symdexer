@@ -29,15 +29,15 @@
     "commands": [
       {
         "command": "symdexer.reset",
-        "title": "Symdexer: Reset cache"
+        "title": "Symdexer: Reset index"
       },
       {
         "command": "symdexer.index",
-        "title": "Symdexer: Cache index"
+        "title": "Symdexer: Index symbols"
       },
       {
-        "command": "symdexer.find",
-        "title": "Symdexer: Find symbol"
+        "command": "symdexer.import",
+        "title": "Symdexer: Import symbol"
       },
       {
         "command": "symdexer.locate",
@@ -46,8 +46,29 @@
     ],
     "configuration": [
       {
-        "title": "Symdexer",
+        "title": "Symdexer (Common)",
         "properties": {
+          "symdexer.interpreter": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "python3",
+              "python"
+            ],
+            "description": "Specify locations to look for the python interpreter."
+          },
+          "symdexer.venvDir": {
+            "type": "string",
+            "default": ".venv",
+            "description": "Specify a virtual environment folder to look imports for."
+          },
+          "symdexer.useVenv": {
+            "type": "boolean",
+            "default": true,
+            "description": "If the defined virtual environment directory should be used to look for imports."
+          },
           "symdexer.cacheFile": {
             "type": "string",
             "default": "symdex.db",
@@ -60,8 +81,38 @@
             },
             "default": [],
             "description": "Package names/paths to index."
+          }
+        }
+      },
+      {
+        "title": "Symdexer (Import)",
+        "properties": {
+          "symdexer.import.types": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "defines",
+                "assigns",
+                "imports"
+              ]
+            },
+            "default": [
+              "defines"
+            ],
+            "description": "Symbol types to look for on editor."
           },
-          "symdexer.types": {
+          "symdexer.import.fuzzy": {
+            "type": "boolean",
+            "default": true,
+            "description": "When finding a symbol, should the text be used as a pattern instead?"
+          }
+        }
+      },
+      {
+        "title": "Symdexer (Locate)",
+        "properties": {
+          "symdexer.locate.types": {
             "type": "array",
             "items": {
               "type": "string",
@@ -78,15 +129,10 @@
             ],
             "description": "Symbol types to look for on editor."
           },
-          "symdexer.fuzzy": {
+          "symdexer.locate.fuzzy": {
             "type": "boolean",
             "default": false,
             "description": "When finding a symbol, should the text be used as a pattern instead?"
-          },
-          "symdexer.venvDir": {
-            "type": "string",
-            "default": ".venv",
-            "description": "Specify a virtual environment folder to look for imports."
           }
         }
       }

@@ -1,72 +1,113 @@
 import * as vscode from 'vscode';
-import * as config from './config';
-import * as util from './util';
 
-export async function runIndex(reset: boolean): Promise<string> {
-    let packages = config.getPackages();
+import * as vsapi from './common/vsapi';
+import * as subproc from './common/subproc';
+import * as config from './common/config';
 
-    return await util.showBusy(
-        'Indexing workspace',
-        util.runSymdexer('index', ...(reset ? ['-r'] : []), ...packages)
-    );
+
+class ImportLikeResult {
+    names: string[];
+    modules: string[];
+    paths: string[];
+
+    constructor(names: string[], modules: string[], paths: string[]) {
+        this.names = names;
+        this.modules = modules;
+        this.paths = paths;
+    }
+
+    empty() {
+        return !this.names.length || !this.modules.length || !this.paths.length;
+    }
+
+    imports() {
+        let max = Math.min(this.names.length, this.modules.length);
+        let result = [];
+
+        for (let i = 0; i < max; i++) {
+            result.push(`from ${this.modules[i]} import ${this.names[i]}`);
+        }
+
+        return result;
+    }
 }
 
-export async function runFind(editor: vscode.TextEditor): Promise<string> {
-    let fuzzy = config.getFuzzy();
-    let types = config.getTypes();
-    let word = util.getSelectedText(editor);
 
-    let result = await util.runSymdexer('find', ...(fuzzy ? ['-f'] : []), word, ...(types ? ['-t', ...types] : []));
-    let items = result.split("\n").filter(v => v !== "");
+async function runImportLike(editor: vscode.TextEditor, command: string): Promise<ImportLikeResult> {
+    let types: string[] = config.types(command);
+    let fuzzy: boolean = config.fuzzy(command);
 
-    if (items.length === 0) {
+    let output = await subproc.runSymdexer(
+        'locate',
+        vsapi.getSelectedText(editor),
+        ...(types ? ['-t', ...types] : []),
+        ...(fuzzy ? ['-f'] : [])
+    );
+
+    let items = output.split(/\r?\n/).filter(v => v);
+
+    let result: [string[], string[], string[]] = [[], [], []];
+
+    for (let i = 0; i < items.length; i++) {
+        result[i % 3].push(items[i]);
+    }
+
+    return new ImportLikeResult(...result);
+}
+
+
+export async function runIndex(reset: boolean): Promise<string> {
+    let packages = config.packages();
+
+    await vsapi.showBusy(
+        'Indexing workspace',
+        subproc.runSymdexer('index', ...packages, ...(reset ? ['-r'] : []))
+    );
+
+    return 'Done indexing';
+}
+
+
+export async function runImport(editor: vscode.TextEditor): Promise<string> {
+    let result = await runImportLike(editor, 'import');
+
+    if (result.empty()) {
         return 'No items found';
     }
 
-    let selection = await vscode.window.showQuickPick(items, {
-        title: 'Results'
-    }) ?? '';
+    let imports = result.imports();
 
-    if (selection === '') {
-        return '';
+    let selection = await vscode.window.showQuickPick(imports, { title: 'Results' }) ?? '';
+    let name = result.names[imports.indexOf(selection)];
+
+    if (name) {
+        await editor.edit(eb => {
+            eb.insert(new vscode.Position(0, 0), selection + '\n');
+            eb.replace(vsapi.getSelectedRange(editor), name);
+        });
     }
-
-    await editor.edit(eb => {
-        eb.insert(new vscode.Position(0, 0), selection + '\n');
-    });
 
     return '';
 }
 
+
 export async function runLocate(editor: vscode.TextEditor): Promise<string> {
-    let fuzzy = config.getFuzzy();
-    let types = config.getTypes();
-    let word = util.getSelectedText(editor);
+    let result = await runImportLike(editor, 'locate');
 
-    let result = await util.runSymdexer('locate', ...(fuzzy ? ['-f'] : []), word, ...(types ? ['-t', ...types] : []));
-    let items = result.split(/\r\n|\n/).filter(v => v !== "");
-
-    if (items.length === 0) {
-        return 'No references found';
+    if (result.empty()) {
+        return 'No items found';
     }
 
-    let modules = items.filter((_, i) => i % 3 === 1);
-    let paths = items.filter((_, i) => i % 3 === 2);
+    let selection = await vscode.window.showQuickPick(result.modules, { title: 'Results' }) ?? '';
+    let path = result.paths[result.modules.indexOf(selection)];
 
-    let selection = await vscode.window.showQuickPick(modules, {
-        title: 'Results'
-    }) ?? '';
-
-    if (selection === '') {
-        return '';
+    if (path) {
+        await vscode.window.showTextDocument(
+            await vscode.workspace.openTextDocument(
+                vscode.Uri.file(path)
+            )
+        );
     }
-
-
-    let path = vscode.Uri.file(paths[modules.indexOf(selection)]);
-
-    await vscode.window.showTextDocument(
-        await vscode.workspace.openTextDocument(path)
-    );
 
     return '';
 }

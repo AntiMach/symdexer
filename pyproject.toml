@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "symdexer"
-version = "0.2.6"
+version = "0.2.8"
 authors = [
   { name="AntiMach", email="themachinumps@gmail.com" },
 ]
@@ -19,7 +19,7 @@ classifiers = [
 
 
 [project.scripts]
-symdexer = "symdexer.main:main"
+symdexer = "symdexer.__main__:main"
 
 [project.urls]
 "Homepage" = "https://github.com/antimach/symdexer"

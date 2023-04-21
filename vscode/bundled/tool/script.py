@@ -2,12 +2,16 @@ import os
 import sys
 from pathlib import Path
 
-site_packages: Path = Path(".") / os.getenv("VENV_DIR") / "lib" / "site-packages"
-bundled_libs: Path = Path(__file__).parent.parent / "libs"
+# sourcery skip: use-named-expression
+venv_dir = os.getenv("VENV_DIR")
 
-sys.path.insert(0, str(site_packages.resolve()))
+if venv_dir:
+    site_packages = Path(".") / venv_dir / "lib" / "site-packages"
+    sys.path.insert(0, str(site_packages.resolve()))
+
+bundled_libs = Path(__file__).parent.parent / "libs"
 sys.path.insert(0, str(bundled_libs.resolve()))
 
-from symdexer.main import main
+from symdexer.__main__ import main
 
 main()
