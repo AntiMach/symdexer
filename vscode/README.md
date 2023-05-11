@@ -36,6 +36,10 @@ None that I know of yet.
 
 ## Release Notes
 
+### [1.1.1]
+
+- Symbolic links that point to a python interpreter should now work.
+
 ### [1.1.0]
 
 - Improved item selection.

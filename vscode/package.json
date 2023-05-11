@@ -2,7 +2,7 @@
   "name": "symdexer",
   "displayName": "Symdexer (Python)",
   "description": "A python symbol indexer",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "publisher": "AntiMach",
   "license": "MIT",
   "engines": {
@@ -151,7 +151,7 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "python bundle-libs.py && npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
