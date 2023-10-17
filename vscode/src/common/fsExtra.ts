@@ -3,7 +3,7 @@ import * as fs from 'fs';
 
 export function exists(path: string): boolean {
     try {
-        fs.lstatSync(path);
+        fs.statSync(path);
         return true;
     } catch {
         return false;
@@ -13,7 +13,7 @@ export function exists(path: string): boolean {
 
 export function isDirectory(path: string): boolean {
     try {
-        return fs.lstatSync(path).isDirectory();
+        return fs.statSync(path).isDirectory();
     } catch {
         return false;
     }
@@ -22,7 +22,7 @@ export function isDirectory(path: string): boolean {
 
 export function isFile(path: string): boolean {
     try {
-        return fs.lstatSync(path).isFile();
+        return fs.statSync(path).isFile();
     } catch {
         return false;
     }

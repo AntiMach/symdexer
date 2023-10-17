@@ -19,19 +19,15 @@ vscode.workspace.onDidChangeConfiguration(config => {
 function cachePythonInterpreter(): string | undefined {
     let bins: string[] = config.interpreter();
 
-    let PATH = (process.env.PATH ?? '').split(path.delimiter);
-    PATH.unshift(vsapi.getProjectRoot());
+    let envPath = (process.env.PATH ?? '').split(path.delimiter);
+    envPath.unshift(vsapi.getProjectRoot());
 
-    let PATHEXT = process.env.PATHEXT?.split(path.delimiter) ?? [];
-    PATHEXT.unshift('');
+    let envPathExt = process.env.PATHEXT?.split(path.delimiter) ?? [];
+    envPathExt.unshift('');
 
-    for (let dir of PATH) {
-        if (!fs.isDirectory(dir)) {
-            continue;
-        }
-
+    for (let dir of envPath) {
         for (let bin of bins) {
-            for (let ext of PATHEXT) {
+            for (let ext of envPathExt) {
                 let loc = path.join(dir, `${bin}${ext}`);
 
                 if (fs.isFile(loc)) {
